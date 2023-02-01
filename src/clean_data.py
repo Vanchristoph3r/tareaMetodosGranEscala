@@ -1,9 +1,9 @@
+""" Loads and clean data module"""
 import pandas as pd
 
-from eda import create_plots
+from src.eda import create_plots
 
 COLUMNS_TO_DELETE = [
-    "Id",
     "Alley",
     "PoolQC",
     "MiscFeature",
@@ -48,7 +48,7 @@ def fill_all_missing_values(data: pd.DataFrame) -> pd.DataFrame:
         data (pd.DataFrame): _description_
     """
     for col in data.columns:
-        if (data[col].dtype == "float64") or (data[col].dtype == "int64"):
+        if data[col].dtype in ("float64", "int64"):
             data[col].fillna(data[col].mean(), inplace=True)
         else:
             data[col].fillna(data[col].mode()[0], inplace=True)

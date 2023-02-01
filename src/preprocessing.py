@@ -1,13 +1,13 @@
+"""Encoding for categorical variables"""
 import logging
 import pandas as pd
 
-from clean_data import delete_cols
-from sklearn.preprocessing import OrdinalEncoder
 from sklearn.preprocessing import LabelEncoder
-
-import pdb
+from sklearn.preprocessing import OrdinalEncoder
+from src.clean_data import delete_cols
 
 COLS_TO_DROP = [
+    "Id",
     "OverallQual",
     "ExterCond",
     "ExterQual",
@@ -71,12 +71,30 @@ def encode_categorical_columns(
 
 
 def product_of_columns(data: pd.DataFrame, cols: list) -> pd.DataFrame:
-    data = data.iloc[data[cols[1]] * data[cols[2]], cols[0]]
+    """Creation of new column or replace one column with the product
+        of columns
+    Args:
+        data (pd.DataFrame): dataframe
+        cols (list): col[0] new var, col[1] and col[2] product of columns
+
+    Returns:
+        pd.DataFrame: datafram
+    """
+    data[cols[0]] = data[cols[1]] * data[cols[2]]
     return data
 
 
 def sum_columns(data: pd.DataFrame, cols: list) -> pd.DataFrame:
-    data = data.iloc[data[cols[1]] + data[cols[2]], cols[0]]
+    """Creation of new column or replace one column with the sum
+        of columns
+    Args:
+        data (pd.DataFrame): dataframe
+        cols (list): col[0] new var, col[1] and col[2] product of columns
+
+    Returns:
+        pd.DataFrame: datafram
+    """
+    data[cols[0]] = data[cols[1]] + data[cols[2]]
     return data
 
 
@@ -160,111 +178,44 @@ def encode_data(train: pd.DataFrame, test: pd.DataFrame) -> list:
         "RoofStyle": cols_11,
         "RoofMatl": cols_12,
     }
-
+    # Encode categorical cols
     for key, val in cols_to_encode.items():
-        print(key)
-        print(val)
+        logging.info({"Key": key})
+        logging.info({"Cols": val})
         train, test = encode_categorical_columns(
             categories=val, column=key, train=train, test=test
         )
-
+    # Encode string cols
     train, test = encode_label_columns(level_cols, train, test)
 
-    cols_to_mutate = {
-        "train": {
-            product_of_columns: [
-                ["BsmtRating", "BsmtCond", "BsmtQual"],
-                ["ExterRating", "ExterCond", "ExterQual"],
-                ["BsmtFinTypeRating", "BsmtFinType1", "BsmtFinType2"],
-            ],
-            sum_columns: [
-                ["BsmtBath", "BsmtFullBath", "BsmtHalfBath"],
-                ["Bath", "FullBath", "HalfBath"],
-                [
-                    "PorchArea",
-                    "OpenPorchSF",
-                    "EnclosedPorch",
-                    "3SsnPorch",
-                    "ScreenPorch",
-                ],
-            ],
-        },
-        "test": {
-            product_of_columns: [
-                ["BsmtRating", "BsmtCond", "BsmtQual"],
-                ["ExterRating", "ExterCond", "ExterQual"],
-                ["BsmtFinTypeRating", "BsmtFinType1", "BsmtFinType2"],
-            ],
-            sum_columns: [
-                ["BsmtBath", "BsmtFullBath", "BsmtHalfBath"],
-                ["Bath", "FullBath", "HalfBath"],
-                [
-                    "PorchArea",
-                    "OpenPorchSF",
-                    "EnclosedPorch",
-                    "3SsnPorch",
-                    "ScreenPorch",
-                ],
-            ],
-        },
-    }
-    # cols_to_mutate = {
-    #     "product_cols_train": {
-    #         "cols": [
-    #             ["BsmtRating", "BsmtCond", "BsmtQual"],
-    #             ["ExterRating", "ExterCond", "ExterQual"],
-    #             ["BsmtFinTypeRating", "BsmtFinType1", "BsmtFinType2"],
-    #         ],
-    #         "func": product_of_columns,
-    #     },
-    #     "product_cols_test": {
-    #         "cols": [
-    #             ["BsmtRating", "BsmtCond", "BsmtQual"],
-    #             ["ExterRating", "ExterCond", "ExterQual"],
-    #             ["BsmtFinTypeRating", "BsmtFinType1", "BsmtFinType2"],
-    #         ],
-    #         "func": product_of_columns,
-    #     },
-    #     "sum_cols_train": {
-    #         "cols": [
-    #             ["BsmtBath", "BsmtFullBath", "BsmtHalfBath"],
-    #             ["Bath", "FullBath", "HalfBath"],
-    #             [
-    #                 "PorchArea",
-    #                 "OpenPorchSF",
-    #                 "EnclosedPorch",
-    #                 "3SsnPorch",
-    #                 "ScreenPorch",
-    #             ],
-    #         ],
-    #         "func": sum_columns,
-    #     },
-    #     "sum_cols_test": {
-    #         "cols": [
-    #             ["BsmtBath", "BsmtFullBath", "BsmtHalfBath"],
-    #             ["Bath", "FullBath", "HalfBath"],
-    #             [
-    #                 "PorchArea",
-    #                 "OpenPorchSF",
-    #                 "EnclosedPorch",
-    #                 "3SsnPorch",
-    #                 "ScreenPorch",
-    #             ],
-    #         ],
-    #         "func": sum_columns,
-    #     },
-    # }
+    cols_product = [
+        ["BsmtRating", "BsmtCond", "BsmtQual"],
+        ["ExterRating", "ExterCond", "ExterQual"],
+        ["BsmtFinTypeRating", "BsmtFinType1", "BsmtFinType2"],
+    ]
+    cols_sum = [
+        ["BsmtBath", "BsmtFullBath", "BsmtHalfBath"],
+        ["Bath", "FullBath", "HalfBath"],
+        [
+            "PorchArea",
+            "OpenPorchSF",
+            "EnclosedPorch",
+            "3SsnPorch",
+            "ScreenPorch",
+        ],
+    ]
 
-    # Sum or product of the columns to mutate
-    for name, vals in cols_to_mutate.items():
-        for cols in vals:
-            if "train" in name:
-                train = vals["func"](train, cols)
-            else:
-                test = vals["func"](test, cols)
+    # Create new varibles
+    for cols in cols_product:
+        train = product_of_columns(train, cols)
+        test = product_of_columns(test, cols)
+
+    for cols in cols_sum:
+        train = sum_columns(train, cols)
+        test = sum_columns(test, cols)
 
     # Delete columns after mutatations and transformations
-    train = delete_cols(cols=COLS_TO_DROP, data=test)
+    train = delete_cols(cols=COLS_TO_DROP, data=train)
     test = delete_cols(cols=COLS_TO_DROP, data=test)
 
     return train, test
